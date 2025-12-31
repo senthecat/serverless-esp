@@ -1,0 +1,70 @@
+service: websocket-server-handler
+# app and org for use with dashboard.serverless.com
+app: websocket-server-handler
+org: michs
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  lambdaHashingVersion: "20201221"
+  stage: ${opt:stage, 'dev'}
+
+  region: us-west-1
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:DeleteItem"
+            - "dynamodb:Scan"
+          Resource:
+            - !GetAtt ClientsTable.Arn
+
+  environment:
+    CLIENTS_TABLE_NAME: ${self:provider.stage}WSClients
+    WSSAPIGATEWAYENDPOINT:
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: WebsocketsApi
+          - ".execute-api."
+          - Ref: AWS::Region
+          - ".amazonaws.com/"
+          - ${sls:stage}
+
+functions:
+  handlers:
+    handler: src/handlers.handle
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: msg
+
+plugins:
+  - serverless-esbuild
+
+resources:
+ Resources:
+    ClientsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CLIENTS_TABLE_NAME}
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: expiresAt
+          Enabled: true
