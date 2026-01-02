@@ -9,20 +9,27 @@ type MessageBody = {
 }
 const outputPins = [18,19,22,23]; 
 const defaultOutputPin = outputPins[0];
+const MAX_CHARS = 100;
 
 function App() {
   const { lastMessage, sendMessage, readyState } = useWebSocket(
     "wss://y3txhbyqo6.execute-api.us-west-1.amazonaws.com/dev"
   );
 
+  // Pin management
   const [selectedPin, setSelectedPin] = useState(defaultOutputPin);
   const [pinValue, setPinValue] = useState(false);
+  
+  // LCD
   const [message, setMessage] = useState<string>("");
 
-  const handlePublish = () => {
+  // Alert
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handlePublish = async () => {
     console.log(message);
 
-    sendMessage(JSON.stringify({
+    await sendMessage(JSON.stringify({
       action: "msg",
       type: "cmd",
       body: {
@@ -30,6 +37,9 @@ function App() {
         value: message
       }
     }))
+
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   }
 
   /*
@@ -38,29 +48,41 @@ function App() {
 
   return (
     <div className="App">
+      {showSuccess && (
+        <div className="mb-3 rounded-xl bg-emerald-100 text-emerald-800 px-4 py-2">
+          Message sent successfully
+        </div>
+      )}
+
       <h1>ESP32 Control Panel</h1>
+
       <div>
         <label 
           htmlFor="message" 
-          className="block mb-2.5 text-sm font-medium text-heading"
-          >
-          Your message
+          className="block mb-2.5 text-sm font-medium text-heading">
+            Your message
         </label>
 
         <textarea 
           id="message" 
           rows={4} 
           value={message}
+          maxLength={MAX_CHARS}
           onChange={(e) => setMessage(e.target.value)}
           className="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full p-3.5 shadow-xs placeholder:text-body" 
           placeholder="Write your thoughts here..."
         />
       </div>
 
+      <div className="mt-1 text-sm text-body">
+        {message.length}/{MAX_CHARS}
+      </div>
+
       <div className="m-4">
         <button
           onClick={handlePublish}
           type="button"
+          disabled={message.length === 0}
           className="text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-300 shadow-md font-semibold leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
         >
           Send to Mich
