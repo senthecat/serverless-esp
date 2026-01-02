@@ -10,6 +10,7 @@ type MessageBody = {
 const outputPins = [18,19,22,23]; 
 const defaultOutputPin = outputPins[0];
 const MAX_CHARS = 100;
+const MAX_NAME_CHAR = 10;
 
 function App() {
   const { lastMessage, sendMessage, readyState } = useWebSocket(
@@ -21,10 +22,12 @@ function App() {
   const [pinValue, setPinValue] = useState(false);
   
   // LCD
+  const [name, setName] = useState<string>("");
   const [message, setMessage] = useState<string>("");
 
   // Alert
   const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState(false);
 
   const handlePublish = async () => {
     console.log(message);
@@ -34,7 +37,8 @@ function App() {
       type: "cmd",
       body: {
         type: "lcdWrite",
-        value: message
+        value: message,
+        name
       }
     }))
 
@@ -57,6 +61,27 @@ function App() {
       <h1>ESP32 Control Panel</h1>
 
       <div>
+        <label
+          htmlFor="name"
+          className="block mb-2.5 text-sm font-medium text-heading">
+            Name
+        </label>
+
+        <textarea
+          id="name"
+          rows={1}
+          value={name}
+          maxLength={MAX_NAME_CHAR}
+          onChange={(e) => setName(e.target.value)}
+          className="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block mx-auto p-3.5 shadow-xs placeholder:text-body" 
+          placeholder="What's your name?"
+        />
+        <div className="mt-1 text-sm text-body">
+          {name.length}/{MAX_NAME_CHAR}
+        </div>
+      </div>
+
+      <div className="m-4">
         <label 
           htmlFor="message" 
           className="block mb-2.5 text-sm font-medium text-heading">
