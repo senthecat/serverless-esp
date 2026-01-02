@@ -17,102 +17,54 @@ function App() {
 
   const [selectedPin, setSelectedPin] = useState(defaultOutputPin);
   const [pinValue, setPinValue] = useState(false);
+  const [message, setMessage] = useState<string>("");
 
-  useEffect(() => {
-    if (lastMessage === null) {
-      return;
-    }
-    
-    const parsedMessage = JSON.parse(lastMessage.data) as MessageBody;
-
-    if (parsedMessage.action !== "msg") {
-      return;
-    }
-
-    if (parsedMessage.type === "output") {
-      const body = parsedMessage.body as number;
-
-      setPinValue(body === 0 ? false : true);
-    }
-  }, [lastMessage, setPinValue])
-
-  useEffect(() => {
-    if (readyState !== 1) return;
+  const handlePublish = () => {
+    console.log(message);
 
     sendMessage(JSON.stringify({
       action: "msg",
       type: "cmd",
       body: {
-        type: "digitalRead",
-        pin: defaultOutputPin,
+        type: "lcdWrite",
+        value: message
       }
-    }));
+    }))
+  }
 
-    outputPins.forEach((pin) => {
-      sendMessage(JSON.stringify({
-        action: "msg",
-        type: "cmd",
-        body: {
-          type: "pinMode",
-          pin,
-          mode: "output"
-        }
-      }))
-    })
-  }, [readyState, sendMessage]);
+  /*
+  THIS IS A GOOD AREA TO ADD WHAT IS BEING DISPLAYED CURRENTLY BACK TO WEBSITE FROM ESP
+  */
 
   return (
     <div className="App">
       <h1>ESP32 Control Panel</h1>
       <div>
-        <form className="max-w-sm mx-auto">
-        <label htmlFor="countries" className="block mb-2 text-sm font-medium text-heading">Select an Pin</label>
-        <select 
-          value={selectedPin}
-          onChange={(e) => {
-            const newPin = parseInt(e.target.value, 10);
-            setSelectedPin(newPin);
-
-            sendMessage(JSON.stringify({
-              action: "msg",
-              type: "cmd",
-              body: {
-                type: "digitalRead",
-                pin: newPin,
-              }
-            }));
-          }}
-          className="block w-full px-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body">
-          {outputPins.map((pin) => (
-            <option key={pin} value={pin}>GPIO{pin}</option>
-            ))}
-        </select>
-      </form>
-      </div>
-      <div className="m-4">
-        <label className="inline-flex items-center cursor-pointer gap-3">
-          <input type="checkbox" 
-            checked={pinValue}
-            onChange={() => {
-              const newValue = !pinValue;
-              setPinValue(newValue);
-
-              sendMessage(JSON.stringify({
-                action: "msg",
-                type: "cmd",
-                body: {
-                  type: "digitalWrite",
-                  pin: selectedPin,
-                  value: newValue ? 1 : 0,
-                }
-              }))
-            }}
-            className="sr-only peer"/>
-          <div className="relative w-9 h-5 bg-neutral-quaternary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-soft dark:peer-focus:ring-brand-soft rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-buffer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
-          <span className="select-none text-sm font-medium text-heading">
-            {pinValue ? "On" : "Off"}
-          </span>
+        <label 
+          htmlFor="message" 
+          className="block mb-2.5 text-sm font-medium text-heading"
+          >
+          Your message
         </label>
+
+        <textarea 
+          id="message" 
+          rows={4} 
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full p-3.5 shadow-xs placeholder:text-body" 
+          placeholder="Write your thoughts here..."
+        />
+      </div>
+
+      <div className="m-4">
+        <button
+          onClick={handlePublish}
+          type="button"
+          className="text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-300 shadow-md font-semibold leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
+        >
+          Send to Mich
+        </button>
       </div>
     </div>
   );
